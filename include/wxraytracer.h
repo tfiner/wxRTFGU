@@ -79,6 +79,8 @@ private:
    RenderCanvas *canvas; //where the rendering takes place
    wxString currentPath; //for file dialogues
    DECLARE_EVENT_TABLE()
+
+   void renderStart();
 };
 
 //IDs for menu items
@@ -87,24 +89,24 @@ enum
    Menu_File_Quit = 100,
    Menu_File_Open,
    Menu_File_Save,
-   Menu_Render_Start,
+   Menu_Render_Start3_1,
+   Menu_Render_Start3_2,
    Menu_Render_Pause,
    Menu_Render_Resume
 };
 
-class RenderCanvas: public wxScrolledWindow
-{
+class RenderCanvas: public wxScrolledWindow {
 public:
    RenderCanvas(wxWindow *parent);
-   virtual ~RenderCanvas(void);
+   virtual ~RenderCanvas();
 
    void SetImage(wxImage& image);
-   wxImage GetImage(void);
+   wxImage GetImage();
 
    virtual void OnDraw(wxDC& dc);
-   void renderStart(void);
-   void renderPause(void);
-   void renderResume(void);
+   void renderStart(int id);
+   void renderPause();
+   void renderResume();
    void OnRenderCompleted( wxCommandEvent& event );
    void OnTimerUpdate( wxTimerEvent& event );
    void OnNewPixel( wxCommandEvent& event );

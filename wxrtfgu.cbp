@@ -38,10 +38,12 @@
 			<Add option="`wx-config --cflags`" />
 			<Add directory="include" />
 			<Add directory="../rtfgu-source/include" />
+			<Add directory="resource" />
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
 		</Linker>
+		<Unit filename="include/wxraytracer.h" />
 		<Unit filename="src/wxraytracer.cpp" />
 		<Extensions>
 			<envvars />

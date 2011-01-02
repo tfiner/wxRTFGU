@@ -6,14 +6,23 @@
 
 #include <IRenderer.h>
 #include <IBuilder.h>
+#include <MultipleObjects.h>
+#include <Matte.h>
+#include <Plane.h>
+
 
 #include <background.xpm>
 #include <main.xpm>
 
 
-/******************************************************************************/
-/********************* wxraytracerapp *****************************************/
-/******************************************************************************/
+namespace {
+
+    const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
+    const RGBColor RED      = RGBColor(1.0,0.0,0.0);
+    const RGBColor GREEN    = RGBColor(0.0,1.0,0.0);
+    const RGBColor YELLOW   = RGBColor(1.0,1.0,0.0);
+
+}
 
 
 BEGIN_EVENT_TABLE(wxraytracerapp, wxApp)
@@ -44,7 +53,8 @@ void wxraytracerapp::SetStatusText(const wxString&  text, int number) {
 /******************************************************************************/
 
 BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
-    EVT_MENU( Menu_Render_Start, wxraytracerFrame::OnRenderStart )
+    EVT_MENU( Menu_Render_Start3_1, wxraytracerFrame::OnRenderStart )
+    EVT_MENU( Menu_Render_Start3_2, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Pause, wxraytracerFrame::OnRenderPause )
     EVT_MENU( Menu_Render_Resume, wxraytracerFrame::OnRenderResume )
     EVT_MENU( Menu_File_Save, wxraytracerFrame::OnSaveFile )
@@ -67,7 +77,8 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
 
     wxMenu *menuRender = new wxMenu;
 
-    menuRender->Append(Menu_Render_Start , wxT("&Start" ));
+    menuRender->Append(Menu_Render_Start3_1 , wxT("&Start3_1" ));
+    menuRender->Append(Menu_Render_Start3_2 , wxT("&Start3_2" ));
     menuRender->Append(Menu_Render_Pause , wxT("&Pause" ));
     menuRender->Append(Menu_Render_Resume, wxT("&Resume"));
 
@@ -152,17 +163,17 @@ void wxraytracerFrame::OnOpenFile( wxCommandEvent& WXUNUSED( event ) ) {
     }
 }
 
-void wxraytracerFrame::OnRenderStart( wxCommandEvent& WXUNUSED( event ) ) {
+void wxraytracerFrame::OnRenderStart( wxCommandEvent& event ) {
     wxMenu* menu = GetMenuBar()->GetMenu(1);
     menu->Enable(menu->FindItem(wxT("&Start" )), FALSE);
     menu->Enable(menu->FindItem(wxT("&Pause" )), TRUE );
     menu->Enable(menu->FindItem(wxT("&Resume")), FALSE);
 
-    canvas->renderStart();
-
     wxMenu* menuFile = GetMenuBar()->GetMenu(0);
     menuFile->Enable(menuFile->FindItem(wxT( "&Open..."   )), FALSE);
     menuFile->Enable(menuFile->FindItem(wxT( "&Save As...")), TRUE );
+
+    canvas->renderStart(event.GetId());
 }
 
 void wxraytracerFrame::OnRenderCompleted( wxCommandEvent& event ) {
@@ -334,20 +345,40 @@ void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
         wxGetApp().SetStatusText( timeString, 1);
 }
 
-void RenderCanvas::renderStart(void) {
-    w.reset(new World());
 
+void build3_1(WorldPtr w) {
     Sphere s(Point3D(0,0,0), 100.0);
     w->set_sphere(s);
-
     w->set_tracer( TracerPtr(new SingleSphere(w)) );
+}
+
+
+void build3_2(WorldPtr w) {
+    w->set_background( BLACK );
+    w->set_tracer( TracerPtr(new MultipleObjects(w)) );
+
+	Sphere*	sphere1 = new Sphere(Point3D(0,-25,0), 80.0);
+	sphere1->set_color( RED );
+    w->add_object( sphere1 );
+
+	Sphere*	sphere2 = new Sphere(Point3D(0,30,0), 60.0);
+	sphere2->set_color( YELLOW );
+    w->add_object( sphere2 );
+
+    Plane* plane = new Plane(Point3D(0,0,0), Normal(0,1,1));
+    plane->set_color( RGBColor(0.0,0.3,0.0) );
+    w->add_object(plane);
+}
+
+
+void RenderCanvas::renderStart(int id) {
+    w.reset(new World());
 
     wxGetApp().SetStatusText( wxT( "Building world..." ) );
-
-    BuilderPtr builder = getBuilder();
-    builder->build(*w);
-
-    // w->build();
+    if (Menu_Render_Start3_1 == id )
+        build3_1(w);
+    else if (Menu_Render_Start3_2 == id )
+        build3_2(w);
 
     wxGetApp().SetStatusText( wxT( "Rendering..." ) );
 
