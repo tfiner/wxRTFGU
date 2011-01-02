@@ -43,7 +43,9 @@
 		<Linker>
 			<Add option="`wx-config --libs`" />
 		</Linker>
+		<Unit filename="include/builders.h" />
 		<Unit filename="include/wxraytracer.h" />
+		<Unit filename="src/builders.cpp" />
 		<Unit filename="src/wxraytracer.cpp" />
 		<Extensions>
 			<envvars />

@@ -14,15 +14,9 @@
 #include <background.xpm>
 #include <main.xpm>
 
+#include "builders.h"
 
-namespace {
 
-    const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
-    const RGBColor RED      = RGBColor(1.0,0.0,0.0);
-    const RGBColor GREEN    = RGBColor(0.0,1.0,0.0);
-    const RGBColor YELLOW   = RGBColor(1.0,1.0,0.0);
-
-}
 
 
 BEGIN_EVENT_TABLE(wxraytracerapp, wxApp)
@@ -343,35 +337,6 @@ void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
         wxGetApp().SetStatusText( timeString + timeRemainString, 1);
     else
         wxGetApp().SetStatusText( timeString, 1);
-}
-
-
-void build3_1(WorldPtr w) {
-    Sphere s(Point3D(0,0,0), 100.0);
-    w->set_sphere(s);
-    w->set_tracer( TracerPtr(new SingleSphere(w)) );
-}
-
-
-void build3_2(WorldPtr w) {
-    w->set_background( BLACK );
-    ViewPlane vp;
-    vp.set_samples(16);
-    w->set_viewplane(vp);
-
-    w->set_tracer( TracerPtr(new MultipleObjects(w)) );
-
-	Sphere*	sphere1 = new Sphere(Point3D(0,-25,0), 80.0);
-	sphere1->set_color( RED );
-    w->add_object( sphere1 );
-
-	Sphere*	sphere2 = new Sphere(Point3D(0,30,0), 60.0);
-	sphere2->set_color( YELLOW );
-    w->add_object( sphere2 );
-
-    Plane* plane = new Plane(Point3D(0,0,0), Normal(0,1,1));
-    plane->set_color( RGBColor(0.0,0.3,0.0) );
-    w->add_object(plane);
 }
 
 

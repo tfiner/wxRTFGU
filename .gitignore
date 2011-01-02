@@ -1,0 +1,6 @@
+*\.orig
+.DS_Store
+wxrtfgu.depend
+wxrtfgu.layout
+bin/*
+obj/*
