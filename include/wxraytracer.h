@@ -23,6 +23,8 @@ class RenderCanvas;
 class RenderThread;
 
 class RenderPixel;
+typedef vector<RenderPixel> RenderPixels;
+
 class World;
 typedef boost::shared_ptr<World> WorldPtr;
 
@@ -39,7 +41,7 @@ private:
    WorldPtr world;
    RenderCanvas* canvas;
 
-   vector<RenderPixel*> pixels;
+   RenderPixels pixels;
    wxStopWatch* timer;
    long lastUpdateTime;
 };

@@ -263,19 +263,18 @@ void RenderCanvas::OnNewPixel( wxCommandEvent& event ) {
     wxBufferedDC bufferedDC(&cdc, *m_image);
 
     //iterate over all pixels in the event
-    vector<RenderPixel*> *pixelsUpdate =
-        (vector<RenderPixel*> *)event.GetClientData();
+    RenderPixels *pixelsUpdate =
+        (RenderPixels *)event.GetClientData();
 
-    for (vector<RenderPixel*>::iterator itr = pixelsUpdate->begin();
+    for (RenderPixels::iterator itr = pixelsUpdate->begin();
             itr != pixelsUpdate->end(); itr++) {
-        RenderPixel* pixel = *itr;
+        RenderPixel& pixel = *itr;
 
-        wxPen pen(wxColour(pixel->red, pixel->green, pixel->blue));
+        wxPen pen(wxColour(pixel.red, pixel.green, pixel.blue));
         bufferedDC.SetPen(pen);
-        bufferedDC.DrawPoint(pixel->x, pixel->y);
+        bufferedDC.DrawPoint(pixel.x, pixel.y);
 
         pixelsRendered++;
-        delete pixel;
     }
 
     pixelsUpdate->clear();
@@ -418,7 +417,7 @@ END_EVENT_TABLE()
 
 void RenderThread::render(int x, int y, int red, int green, int blue) {
 
-    pixels.push_back(new RenderPixel(x, y, red, green, blue));
+    pixels.push_back(RenderPixel(x, y, red, green, blue));
 
     if (timer->Time() - lastUpdateTime > 40)
         NotifyCanvas();
@@ -430,7 +429,7 @@ void RenderThread::NotifyCanvas() {
     lastUpdateTime = timer->Time();
 
     //copy rendered pixels into a new vector and reset
-    vector<RenderPixel*> *pixelsUpdate = new vector<RenderPixel*>(pixels);
+    RenderPixels *pixelsUpdate = new RenderPixels(pixels);
     pixels.clear();
 
     wxCommandEvent event(wxEVT_RENDER, ID_RENDER_NEWPIXEL);
