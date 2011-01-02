@@ -91,6 +91,7 @@ enum
    Menu_File_Save,
    Menu_Render_Start3_1,
    Menu_Render_Start3_2,
+   Menu_Render_Start4_4a,
    Menu_Render_Pause,
    Menu_Render_Resume
 };

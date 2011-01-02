@@ -49,6 +49,7 @@ void wxraytracerapp::SetStatusText(const wxString&  text, int number) {
 BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
     EVT_MENU( Menu_Render_Start3_1, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Start3_2, wxraytracerFrame::OnRenderStart )
+    EVT_MENU( Menu_Render_Start4_4a, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Pause, wxraytracerFrame::OnRenderPause )
     EVT_MENU( Menu_Render_Resume, wxraytracerFrame::OnRenderResume )
     EVT_MENU( Menu_File_Save, wxraytracerFrame::OnSaveFile )
@@ -73,6 +74,7 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
 
     menuRender->Append(Menu_Render_Start3_1 , wxT("&Start3_1" ));
     menuRender->Append(Menu_Render_Start3_2 , wxT("&Start3_2" ));
+    menuRender->Append(Menu_Render_Start4_4a , wxT("&Start4_4a" ));
     menuRender->Append(Menu_Render_Pause , wxT("&Pause" ));
     menuRender->Append(Menu_Render_Resume, wxT("&Resume"));
 
@@ -348,6 +350,8 @@ void RenderCanvas::renderStart(int id) {
         build3_1(w);
     else if (Menu_Render_Start3_2 == id )
         build3_2(w);
+    else if (Menu_Render_Start4_4a == id )
+        build4_4a(w);
 
     wxGetApp().SetStatusText( wxT( "Rendering..." ) );
 
