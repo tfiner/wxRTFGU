@@ -355,6 +355,10 @@ void build3_1(WorldPtr w) {
 
 void build3_2(WorldPtr w) {
     w->set_background( BLACK );
+    ViewPlane vp;
+    vp.set_samples(16);
+    w->set_viewplane(vp);
+
     w->set_tracer( TracerPtr(new MultipleObjects(w)) );
 
 	Sphere*	sphere1 = new Sphere(Point3D(0,-25,0), 80.0);
