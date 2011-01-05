@@ -83,7 +83,7 @@ void build4_4a(WorldPtr w) {
     matte_ptr->set_cd( YELLOW );
 
     Sphere* sphere_ptr = new Sphere(Point3D(0.0), 13.0);
-//    sphere_ptr->set_material(matte_ptr);
+    sphere_ptr->set_material(MaterialPtr(matte_ptr));
     w->add_object(sphere_ptr);
 }
 
