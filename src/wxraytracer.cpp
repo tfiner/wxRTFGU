@@ -10,6 +10,12 @@
 #include <Matte.h>
 #include <Plane.h>
 
+#include <Hammersley.h>
+#include <Jittered.h>
+#include <MultiJittered.h>
+#include <NRooks.h>
+#include <PureRandom.h>
+#include <Regular.h>
 
 #include <background.xpm>
 #include <main.xpm>
@@ -50,13 +56,18 @@ BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
     EVT_MENU( Menu_Render_Start3_1, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Start3_2, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Start4_4a, wxraytracerFrame::OnRenderStart )
+    EVT_MENU( Menu_Render_Math, wxraytracerFrame::OnRenderStart )
     EVT_MENU( Menu_Render_Pause, wxraytracerFrame::OnRenderPause )
     EVT_MENU( Menu_Render_Resume, wxraytracerFrame::OnRenderResume )
+
     EVT_MENU( Menu_File_Save, wxraytracerFrame::OnSaveFile )
     EVT_MENU( Menu_File_Open, wxraytracerFrame::OnOpenFile )
     EVT_MENU( Menu_File_Quit, wxraytracerFrame::OnQuit )
     EVT_COMMAND(ID_RENDER_COMPLETED, wxEVT_RENDER,
                 wxraytracerFrame::OnRenderCompleted)
+
+    EVT_MENU_RANGE( Menu_Sampler_Hammersley, Menu_Sampler_Regular, wxraytracerFrame::OnSamplerMenu )
+
 END_EVENT_TABLE()
 
 wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
@@ -75,6 +86,8 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     menuRender->Append(Menu_Render_Start3_1 , wxT("&Start3_1" ));
     menuRender->Append(Menu_Render_Start3_2 , wxT("&Start3_2" ));
     menuRender->Append(Menu_Render_Start4_4a , wxT("&Start4_4a" ));
+    menuRender->Append(Menu_Render_Math, wxT("&Start Math" ));
+
     menuRender->Append(Menu_Render_Pause , wxT("&Pause" ));
     menuRender->Append(Menu_Render_Resume, wxT("&Resume"));
 
@@ -82,9 +95,19 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     menuRender->Enable(menuRender->FindItem(wxT("&Pause" )), FALSE);
     menuRender->Enable(menuRender->FindItem(wxT("&Resume")), FALSE);
 
+    wxMenu* menuSampler = new wxMenu;
+
+    menuSampler->AppendCheckItem(Menu_Sampler_Hammersley, wxT("Hammersley"));
+    menuSampler->AppendCheckItem(Menu_Sampler_Jitter, wxT("Jitter"));
+    menuSampler->AppendCheckItem(Menu_Sampler_MultiJitter, wxT("MultiJitter"));
+    menuSampler->AppendCheckItem(Menu_Sampler_NRooks, wxT("NRooks"));
+    menuSampler->AppendCheckItem(Menu_Sampler_Random, wxT("Pure Random"));
+    menuSampler->AppendCheckItem(Menu_Sampler_Regular, wxT("Regular"));
+
     wxMenuBar *menuBar = new wxMenuBar;
     menuBar->Append(menuFile  , wxT("&File"  ));
     menuBar->Append(menuRender, wxT("&Render"));
+    menuBar->Append(menuSampler, wxT("&Sampler"));
 
     SetMenuBar( menuBar );
 
@@ -100,6 +123,35 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     int widths[] = {150,300};
     statusBar->SetFieldsCount(2, widths);
 }
+
+
+void wxraytracerFrame::OnSamplerMenu( wxCommandEvent& event ) {
+    const int ID = event.GetId();
+    wxLogDebug(
+        wxString::Format(wxT("Setting sampler to %d: %s"), ID, event.GetString().c_str() )
+    );
+
+    wxWindow* top = wxGetApp().GetTopWindow();
+    wxFrame* frame = dynamic_cast<wxFrame*>(top);
+    wxMenu* menu = 0;
+    if ( frame )
+        menu = frame->GetMenuBar()->GetMenu(2);
+
+    if (!menu)
+        return;
+
+    const size_t NUM_ITEMS = menu->GetMenuItemCount();
+    for (size_t i = 0; i < NUM_ITEMS; i++) {
+        wxMenuItem* item = menu->FindItemByPosition(i);
+        if ( ID != item->GetId() ) {
+            item->Check(false);
+        }
+    }
+
+    canvas->setSamplerMenu( static_cast<MenuEnums>(ID) );
+}
+
+
 
 void wxraytracerFrame::OnQuit( wxCommandEvent& WXUNUSED( event ) ) {
     Close();
@@ -207,14 +259,12 @@ void wxraytracerFrame::OnRenderResume( wxCommandEvent& event ) {
 }
 
 
-/******************************************************************************/
-/********************* RenderCanvas *******************************************/
-/******************************************************************************/
-
-
 RenderCanvas::RenderCanvas(wxWindow *parent)
-        : wxScrolledWindow(parent), m_image(NULL),
-        timer(NULL), updateTimer(this, ID_RENDER_UPDATE) {
+        : wxScrolledWindow(parent),
+        m_image(NULL),
+        samplerEnum_(Menu_Sampler_Regular),
+        timer(NULL),
+        updateTimer(this, ID_RENDER_UPDATE) {
     SetOwnBackgroundColour(wxColour(143,144,150));
 }
 
@@ -274,7 +324,7 @@ void RenderCanvas::OnNewPixel( wxCommandEvent& event ) {
         (RenderPixels *)event.GetClientData();
 
     for (RenderPixels::iterator itr = pixelsUpdate->begin();
-            itr != pixelsUpdate->end(); itr++) {
+            itr != pixelsUpdate->end(); ++itr) {
         RenderPixel& pixel = *itr;
 
         wxPen pen(wxColour(pixel.red, pixel.green, pixel.blue));
@@ -284,9 +334,47 @@ void RenderCanvas::OnNewPixel( wxCommandEvent& event ) {
         pixelsRendered++;
     }
 
-    pixelsUpdate->clear();
     delete pixelsUpdate;
 }
+
+
+SamplerPtr getSampler(MenuEnums samplerMenuitem) {
+    SamplerPtr sampler;
+    switch(samplerMenuitem) {
+
+        case Menu_Sampler_Hammersley:
+            sampler.reset(new Hammersley);
+            break;
+
+        case Menu_Sampler_Jitter:
+            sampler.reset(new Jittered);
+            break;
+
+        case Menu_Sampler_MultiJitter:
+            sampler.reset(new MultiJittered);
+            break;
+
+        case Menu_Sampler_NRooks:
+            sampler.reset(new NRooks);
+            break;
+
+        case Menu_Sampler_Random:
+            sampler.reset(new PureRandom);
+            break;
+
+        case Menu_Sampler_Regular:
+        default:
+            sampler.reset(new Regular);
+            break;
+    }
+    return sampler;
+}
+
+
+void RenderCanvas::setSamplerMenu( MenuEnums samplerMenuitem ) {
+    samplerEnum_ = samplerMenuitem;
+}
+
 
 void RenderCanvas::renderPause(void) {
     if (thread != NULL)
@@ -345,6 +433,19 @@ void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
 void RenderCanvas::renderStart(int id) {
     w.reset(new World());
 
+    ViewPlane vp = w->get_viewplane();
+    int width = 0, height = 0;
+    GetSize(&width, &height);
+
+    vp.hres = width;
+    vp.vres = height;
+
+    vp.set_samples(16);
+    vp.set_sampler(getSampler(samplerEnum_));
+
+    w->set_viewplane(vp);
+
+
     wxGetApp().SetStatusText( wxT( "Building world..." ) );
     if (Menu_Render_Start3_1 == id )
         build3_1(w);
@@ -352,11 +453,12 @@ void RenderCanvas::renderStart(int id) {
         build3_2(w);
     else if (Menu_Render_Start4_4a == id )
         build4_4a(w);
+    else if (Menu_Render_Math == id )
+        build_math(w);
 
     wxGetApp().SetStatusText( wxT( "Rendering..." ) );
 
     pixelsRendered = 0;
-    const ViewPlane& vp = w->get_viewplane();
     pixelsToRender = vp.hres * vp.vres;
 
     //set the background
@@ -369,9 +471,9 @@ void RenderCanvas::renderStart(int id) {
 
     wxBitmap tile(background_xpm);
 
-    for(int x = 0; x < vp.hres; x += 16) {
-        for(int y = 0; y < vp.vres; y += 16)
-        dc.DrawBitmap(tile, x, y, FALSE);
+    for (int x = 0; x < vp.hres; x += 16) {
+        for (int y = 0; y < vp.vres; y += 16)
+            dc.DrawBitmap(tile, x, y, FALSE);
     }
 
     dc.SelectObject(wxNullBitmap);
@@ -390,24 +492,10 @@ void RenderCanvas::renderStart(int id) {
     RendererPtr renderer(boost::dynamic_pointer_cast<IRenderer>(thread));
 
     w->set_renderer(renderer);
-    // w->paintArea = thread;
     thread->SetPriority(20);
     thread->Run();
 }
 
-/******************************************************************************/
-/********************* RenderPixel ********************************************/
-/******************************************************************************/
-
-
-RenderPixel::RenderPixel(int _x, int _y, int _red, int _green, int _blue)
-        : x(_x), y(_y), red(_red), green(_green), blue(_blue) {}
-
-
-
-/******************************************************************************/
-/********************* RenderThread *******************************************/
-/******************************************************************************/
 
 DEFINE_EVENT_TYPE(wxEVT_RENDER)
 
@@ -419,11 +507,16 @@ BEGIN_EVENT_TABLE( RenderCanvas, wxScrolledWindow )
     EVT_TIMER(ID_RENDER_UPDATE, RenderCanvas::OnTimerUpdate)
 END_EVENT_TABLE()
 
-void RenderThread::render(int x, int y, int red, int green, int blue) {
 
+
+RenderPixel::RenderPixel(int _x, int _y, int _red, int _green, int _blue)
+        : x(_x), y(_y), red(_red), green(_green), blue(_blue) {}
+
+
+void RenderThread::render(int x, int y, int red, int green, int blue) {
     pixels.push_back(RenderPixel(x, y, red, green, blue));
 
-    if (timer->Time() - lastUpdateTime > 40)
+    if (timer->Time() - lastUpdateTime > 250)
         NotifyCanvas();
 
     TestDestroy();
@@ -435,6 +528,7 @@ void RenderThread::NotifyCanvas() {
     //copy rendered pixels into a new vector and reset
     RenderPixels *pixelsUpdate = new RenderPixels(pixels);
     pixels.clear();
+    pixels.reserve(500);
 
     wxCommandEvent event(wxEVT_RENDER, ID_RENDER_NEWPIXEL);
     event.SetClientData(pixelsUpdate);

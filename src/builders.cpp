@@ -11,6 +11,8 @@
 #include <Regular.h>
 #include <Pinhole.h>
 
+#include "tracer_math.h"
+
 namespace {
 
     const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
@@ -30,7 +32,7 @@ void build3_1(WorldPtr w) {
 
 void build3_2(WorldPtr w) {
     w->set_background( BLACK );
-    ViewPlane vp;
+    ViewPlane vp = w->get_viewplane();
     vp.set_samples(16);
     w->set_viewplane(vp);
 
@@ -85,5 +87,10 @@ void build4_4a(WorldPtr w) {
     Sphere* sphere_ptr = new Sphere(Point3D(0.0), 13.0);
     sphere_ptr->set_material(MaterialPtr(matte_ptr));
     w->add_object(sphere_ptr);
+}
+
+
+void build_math(WorldPtr w) {
+    w->set_tracer( TracerPtr(new TracerMath(w)) );
 }
 
