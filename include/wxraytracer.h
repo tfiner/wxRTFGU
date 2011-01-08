@@ -75,6 +75,8 @@ public:
 
 private:
     wxToolBar* toolbar_;
+    wxComboBox* samplerCombo_;
+    wxComboBox* builderCombo_;
     RenderCanvas *canvas; //where the rendering takes place
     wxString currentPath; //for file dialogues
     DECLARE_EVENT_TABLE()
@@ -94,12 +96,6 @@ enum MenuEnums {
 
     Menu_Render_Pause,
     Menu_Render_Resume,
-    Menu_Sampler_Hammersley,
-    Menu_Sampler_Jitter,
-    Menu_Sampler_MultiJitter,
-    Menu_Sampler_NRooks,
-    Menu_Sampler_Random,
-    Menu_Sampler_Regular,
 
     Menu_Render_First = Menu_Render_Start3_1,
     Menu_Render_Last = Menu_Render_Math
@@ -117,8 +113,7 @@ public:
 
     virtual void OnDraw(wxDC& dc);
 
-    void setSamplerMenu( MenuEnums samplerMenuitem );
-    void renderStart(RenderParams renderParams);
+    void renderStart(const RenderParams& rp);
     void renderPause();
     void renderResume();
     void OnRenderCompleted( wxCommandEvent& event );
@@ -130,7 +125,6 @@ protected:
     WorldPtr w;
 
 private:
-    MenuEnums samplerEnum_;
     RenderThreadPtr thread;
     wxStopWatch* timer;
     long pixelsRendered;

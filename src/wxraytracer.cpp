@@ -23,43 +23,71 @@
 #include "builders.h"
 
 
-typedef void*(*builderFunc)(WorldPtr);
-// builderFunc func_;
+typedef void (*builderFunc)(WorldPtr);
+
+struct BuilderSelector {
+    wxString    name_;
+    builderFunc func_;
+};
+const BuilderSelector BUILDERS[] = {
+    { wxT("3-1"),   build3_1},
+    { wxT("3-2"),   build3_2},
+    { wxT("4_4a"),  build4_4a},
+    { wxT("math"),  build_math},
+    { wxT("debug"), build_debug}
+};
+const int NUM_BUILDERS = sizeof(BUILDERS)/sizeof(BUILDERS[0]);
+
+
+
+enum SamplerType {
+    SamplerTypeHammersley = wxID_HIGHEST + 1,
+    SamplerTypeJitter,
+    SamplerTypeMultiJitter,
+    SamplerTypeNRooks,
+    SamplerTypeRandom,
+    SamplerTypeRegular,
+};
 
 struct SamplerSelector {
-    wxString    name_;
-    SamplerPtr  sampler;
+    wxString        name_;
+    SamplerType     sampler;
 };
 
 const SamplerSelector SAMPLERS[] = {
-    {wxT("Hammersley"), SamplerPtr(new Hammersley)},
+    {wxT("Hammersley"),     SamplerTypeHammersley },
+    {wxT("Jitter"),         SamplerTypeJitter },
+    {wxT("Multijitter"),    SamplerTypeMultiJitter },
+    {wxT("N Rooks"),        SamplerTypeNRooks },
+    {wxT("Random"),         SamplerTypeRandom },
+    {wxT("Regular"),        SamplerTypeRegular },
 };
 const int NUM_SAMPLERS = sizeof(SAMPLERS)/sizeof(SAMPLERS[0]);
 
-SamplerPtr getSampler(MenuEnums samplerMenuitem) {
+SamplerPtr getSampler(SamplerType samplerMenuitem) {
     SamplerPtr sampler;
     switch(samplerMenuitem) {
-        case Menu_Sampler_Hammersley:
+        case SamplerTypeHammersley:
             sampler.reset(new Hammersley);
             break;
 
-        case Menu_Sampler_Jitter:
+        case SamplerTypeJitter:
             sampler.reset(new Jittered);
             break;
 
-        case Menu_Sampler_MultiJitter:
+        case SamplerTypeMultiJitter:
             sampler.reset(new MultiJittered);
             break;
 
-        case Menu_Sampler_NRooks:
+        case SamplerTypeNRooks:
             sampler.reset(new NRooks);
             break;
 
-        case Menu_Sampler_Random:
+        case SamplerTypeRandom:
             sampler.reset(new PureRandom);
             break;
 
-        case Menu_Sampler_Regular:
+        case SamplerTypeRegular:
         default:
             sampler.reset(new Regular);
             break;
@@ -68,7 +96,10 @@ SamplerPtr getSampler(MenuEnums samplerMenuitem) {
 }
 
 struct RenderParams {
-    SamplerSelector samplerSelector;
+    RenderParams() : builder_(0) {}
+
+    SamplerPtr  sampler_;
+    builderFunc builder_;
 };
 
 
@@ -96,7 +127,6 @@ void wxraytracerapp::SetStatusText(const wxString&  text, int number) {
 }
 
 
-
 BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
     EVT_MENU_RANGE( Menu_Render_First, Menu_Render_Last, wxraytracerFrame::OnRenderStart )
 
@@ -108,8 +138,6 @@ BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
     EVT_MENU( Menu_File_Quit, wxraytracerFrame::OnQuit )
     EVT_COMMAND(ID_RENDER_COMPLETED, wxEVT_RENDER,
                 wxraytracerFrame::OnRenderCompleted)
-
-    EVT_MENU_RANGE( Menu_Sampler_Hammersley, Menu_Sampler_Regular, wxraytracerFrame::OnSamplerMenu )
 
 END_EVENT_TABLE()
 
@@ -139,35 +167,38 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     menuRender->Enable(menuRender->FindItem(wxT("&Pause" )), FALSE);
     menuRender->Enable(menuRender->FindItem(wxT("&Resume")), FALSE);
 
-    wxMenu* menuSampler = new wxMenu;
-
-    menuSampler->AppendCheckItem(Menu_Sampler_Hammersley, wxT("Hammersley"));
-    menuSampler->AppendCheckItem(Menu_Sampler_Jitter, wxT("Jitter"));
-    menuSampler->AppendCheckItem(Menu_Sampler_MultiJitter, wxT("MultiJitter"));
-    menuSampler->AppendCheckItem(Menu_Sampler_NRooks, wxT("NRooks"));
-    menuSampler->AppendCheckItem(Menu_Sampler_Random, wxT("Pure Random"));
-    menuSampler->AppendCheckItem(Menu_Sampler_Regular, wxT("Regular"));
 
     wxMenuBar *menuBar = new wxMenuBar;
     menuBar->Append(menuFile  , wxT("&File"  ));
     menuBar->Append(menuRender, wxT("&Render"));
-    menuBar->Append(menuSampler, wxT("&Sampler"));
 
     SetMenuBar( menuBar );
 
-
     toolbar_ = CreateToolBar();
 
-    wxStaticText* text = new wxStaticText(toolbar_, wxID_ANY, wxT("Sampler"));
-    toolbar_->AddControl(text);
 
-    wxComboBox* combo = new wxComboBox(toolbar_, wxID_ANY);
 
-    for (int i = 0; i < NUM_SAMPLERS; i++) {
-        void* data = reinterpret_cast<>(SAMPLERS[i].sampler);
-        combo->Append(SAMPLERS[i].name_, SAMPLERS[i].sampler);
+    builderCombo_ = new wxComboBox(toolbar_, wxID_ANY);
+    for (int i = 0; i < NUM_BUILDERS; i++) {
+        const void* data = reinterpret_cast<const void*>(BUILDERS[i].func_);
+        builderCombo_->Append(
+            BUILDERS[i].name_,
+            const_cast<void*>(data));
     }
-    toolbar_->AddControl(combo);
+    builderCombo_->SetSelection(0);
+    toolbar_->AddControl(builderCombo_);
+
+
+    samplerCombo_ = new wxComboBox(toolbar_, wxID_ANY);
+    for (int i = 0; i < NUM_SAMPLERS; i++) {
+        const void* data = reinterpret_cast<const void*>(&SAMPLERS[i].sampler);
+        samplerCombo_->Append(
+            SAMPLERS[i].name_,
+            const_cast<void*>(data));
+    }
+    samplerCombo_->SetSelection(0);
+    toolbar_->AddControl(samplerCombo_);
+
 
     canvas = new RenderCanvas(this);
 
@@ -181,34 +212,6 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     int widths[] = {150,300};
     statusBar->SetFieldsCount(2, widths);
 }
-
-
-void wxraytracerFrame::OnSamplerMenu( wxCommandEvent& event ) {
-    const int ID = event.GetId();
-    wxLogDebug(
-        wxString::Format(wxT("Setting sampler to %d: %s"), ID, event.GetString().c_str() )
-    );
-
-    wxWindow* top = wxGetApp().GetTopWindow();
-    wxFrame* frame = dynamic_cast<wxFrame*>(top);
-    wxMenu* menu = 0;
-    if ( frame )
-        menu = frame->GetMenuBar()->GetMenu(2);
-
-    if (!menu)
-        return;
-
-    const size_t NUM_ITEMS = menu->GetMenuItemCount();
-    for (size_t i = 0; i < NUM_ITEMS; i++) {
-        wxMenuItem* item = menu->FindItemByPosition(i);
-        if ( ID != item->GetId() ) {
-            item->Check(false);
-        }
-    }
-
-    canvas->setSamplerMenu( static_cast<MenuEnums>(ID) );
-}
-
 
 
 void wxraytracerFrame::OnQuit( wxCommandEvent& WXUNUSED( event ) ) {
@@ -280,9 +283,22 @@ void wxraytracerFrame::OnRenderStart( wxCommandEvent& event ) {
     menuFile->Enable(menuFile->FindItem(wxT( "&Save As...")), TRUE );
 
     RenderParams rp;
+    int selection = samplerCombo_->GetSelection();
+    if (selection >= 0 ) {
+        void* data = samplerCombo_->GetClientData(selection);
+        assert(data);
+        SamplerType sampleType = *reinterpret_cast<SamplerType*>(data);
+        rp.sampler_ = getSampler(sampleType);
+    }
 
+    selection = builderCombo_->GetSelection();
+    if (selection >= 0 ) {
+        void* data = builderCombo_->GetClientData(selection);
+        assert(data);
+        rp.builder_ = reinterpret_cast<builderFunc>(data);
+    }
 
-    canvas->renderStart(event.GetId());
+    canvas->renderStart(rp);
 }
 
 void wxraytracerFrame::OnRenderCompleted( wxCommandEvent& event ) {
@@ -323,7 +339,6 @@ void wxraytracerFrame::OnRenderResume( wxCommandEvent& event ) {
 RenderCanvas::RenderCanvas(wxWindow *parent)
         : wxScrolledWindow(parent),
         m_image(NULL),
-        samplerEnum_(Menu_Sampler_Regular),
         timer(NULL),
         updateTimer(this, ID_RENDER_UPDATE) {
     SetOwnBackgroundColour(wxColour(143,144,150));
@@ -399,13 +414,6 @@ void RenderCanvas::OnNewPixel( wxCommandEvent& event ) {
 }
 
 
-
-
-void RenderCanvas::setSamplerMenu( MenuEnums samplerMenuitem ) {
-    samplerEnum_ = samplerMenuitem;
-}
-
-
 void RenderCanvas::renderPause(void) {
     if (thread != NULL)
         thread->Pause();
@@ -460,7 +468,9 @@ void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
 }
 
 
-void RenderCanvas::renderStart(int id) {
+void RenderCanvas::renderStart(const RenderParams& rp) {
+    assert(rp.builder_);
+
     w.reset(new World());
 
     ViewPlane vp = w->get_viewplane();
@@ -470,26 +480,27 @@ void RenderCanvas::renderStart(int id) {
     vp.hres = width;
     vp.vres = height;
 
-//    vp.set_samples(4);
-    SamplerPtr sampler = getSampler(samplerEnum_);
-    sampler->init(1, 83);
-    sampler->generate_samples();
-    vp.set_sampler(sampler);
-
+    if ( rp.sampler_ ) {
+        // SamplerPtr sampler = getSampler(rp.sampler_);
+        rp.sampler_->init(1, 83);
+        rp.sampler_->generate_samples();
+        vp.set_sampler(rp.sampler_);
+    }
     w->set_viewplane(vp);
 
 
     wxGetApp().SetStatusText( wxT( "Building world..." ) );
-    if (Menu_Render_Start3_1 == id )
-        build3_1(w);
-    else if (Menu_Render_Start3_2 == id )
-        build3_2(w);
-    else if (Menu_Render_Start4_4a == id )
-        build4_4a(w);
-    else if (Menu_Render_Math == id )
-        build_math(w);
-    else if (Menu_Render_Debug == id )
-        build_debug(w);
+    rp.builder_( w );
+//    if (Menu_Render_Start3_1 == id )
+//        build3_1(w);
+//    else if (Menu_Render_Start3_2 == id )
+//        build3_2(w);
+//    else if (Menu_Render_Start4_4a == id )
+//        build4_4a(w);
+//    else if (Menu_Render_Math == id )
+//        build_math(w);
+//    else if (Menu_Render_Debug == id )
+//        build_debug(w);
 
     // Builder may have reset the viewplane.
     vp = w->get_viewplane();
