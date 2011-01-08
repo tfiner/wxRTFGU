@@ -74,11 +74,10 @@ public:
     void OnRenderResume( wxCommandEvent& event );
 
 private:
+    wxToolBar* toolbar_;
     RenderCanvas *canvas; //where the rendering takes place
     wxString currentPath; //for file dialogues
     DECLARE_EVENT_TABLE()
-
-    void renderStart();
 };
 
 //IDs for menu items
@@ -86,10 +85,13 @@ enum MenuEnums {
     Menu_File_Quit = 100,
     Menu_File_Open,
     Menu_File_Save,
+
     Menu_Render_Start3_1,
     Menu_Render_Start3_2,
     Menu_Render_Start4_4a,
+    Menu_Render_Debug,
     Menu_Render_Math,
+
     Menu_Render_Pause,
     Menu_Render_Resume,
     Menu_Sampler_Hammersley,
@@ -98,7 +100,12 @@ enum MenuEnums {
     Menu_Sampler_NRooks,
     Menu_Sampler_Random,
     Menu_Sampler_Regular,
+
+    Menu_Render_First = Menu_Render_Start3_1,
+    Menu_Render_Last = Menu_Render_Math
 };
+
+struct RenderParams;
 
 class RenderCanvas: public wxScrolledWindow {
 public:
@@ -111,7 +118,7 @@ public:
     virtual void OnDraw(wxDC& dc);
 
     void setSamplerMenu( MenuEnums samplerMenuitem );
-    void renderStart(int id);
+    void renderStart(RenderParams renderParams);
     void renderPause();
     void renderResume();
     void OnRenderCompleted( wxCommandEvent& event );

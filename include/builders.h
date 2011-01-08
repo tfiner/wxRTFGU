@@ -10,6 +10,7 @@ void build3_1(WorldPtr w);
 void build3_2(WorldPtr w);
 void build4_4a(WorldPtr w);
 void build_math(WorldPtr w);
+void build_debug(WorldPtr w);
 
 
 #endif // BUILDERS_H_INCLUDED

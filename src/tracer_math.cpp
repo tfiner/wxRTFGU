@@ -29,7 +29,7 @@ namespace {
         double x = degToRad(ray.o.x);
         double y = degToRad(ray.o.y);
         float fxy = 0.5f * (1 + sin(x*x * y*y));
-        return RGBColor(fxy,fxy,fxy);
+        return RGBColor(fxy);
     }
 
 

@@ -12,10 +12,12 @@
 #include <Pinhole.h>
 
 #include "tracer_math.h"
+#include "tracer_debug.h"
 
 namespace {
 
     const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
+    const RGBColor WHITE    = RGBColor(1.0,1.0,1.0);
     const RGBColor RED      = RGBColor(1.0,0.0,0.0);
     const RGBColor GREEN    = RGBColor(0.0,1.0,0.0);
     const RGBColor YELLOW   = RGBColor(1.0,1.0,0.0);
@@ -33,7 +35,8 @@ void build3_1(WorldPtr w) {
 void build3_2(WorldPtr w) {
     w->set_background( BLACK );
     ViewPlane vp = w->get_viewplane();
-    vp.set_samples(16);
+    SamplerPtr sampler = vp.get_sampler();
+    sampler->init(16, 83);
     w->set_viewplane(vp);
 
     w->set_tracer( TracerPtr(new MultipleObjects(w)) );
@@ -91,6 +94,31 @@ void build4_4a(WorldPtr w) {
 
 
 void build_math(WorldPtr w) {
+    ViewPlane vp = w->get_viewplane();
+    vp.set_pixel_size(0.85);
+
+    SamplerPtr sampler = vp.get_sampler();
+    sampler->init(4, 83);
+    sampler->generate_samples();
+
+    w->set_viewplane(vp);
     w->set_tracer( TracerPtr(new TracerMath(w)) );
+
 }
 
+
+void build_debug(WorldPtr w) {
+    ViewPlane vp;
+    vp.set_hres(320);
+    vp.set_vres(320);
+    vp.set_pixel_size(1);
+    SamplerPtr sampler = vp.get_sampler();
+    sampler->init(16, 83);
+    sampler->generate_samples();
+    vp.set_sampler(sampler);
+    w->set_viewplane(vp);
+
+
+    w->set_background( WHITE );
+    w->set_tracer( TracerPtr(new TracerDebug(w, BLACK)) );
+}

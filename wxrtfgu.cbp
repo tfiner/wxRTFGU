@@ -30,6 +30,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="../rtfgu-source/bin/librtfgu.a" />
 				</Linker>
 			</Target>
 		</Build>
@@ -44,8 +45,12 @@
 			<Add option="`wx-config --libs`" />
 		</Linker>
 		<Unit filename="include/builders.h" />
+		<Unit filename="include/tracer_debug.h" />
+		<Unit filename="include/tracer_math.h" />
 		<Unit filename="include/wxraytracer.h" />
 		<Unit filename="src/builders.cpp" />
+		<Unit filename="src/tracer_debug.cpp" />
+		<Unit filename="src/tracer_math.cpp" />
 		<Unit filename="src/wxraytracer.cpp" />
 		<Extensions>
 			<envvars />
