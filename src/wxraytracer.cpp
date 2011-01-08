@@ -23,6 +23,7 @@
 #include "builders.h"
 
 
+
 typedef void (*builderFunc)(WorldPtr);
 
 struct BuilderSelector {
@@ -39,9 +40,8 @@ const BuilderSelector BUILDERS[] = {
 const int NUM_BUILDERS = sizeof(BUILDERS)/sizeof(BUILDERS[0]);
 
 
-
 enum SamplerType {
-    SamplerTypeHammersley = wxID_HIGHEST + 1,
+    SamplerTypeHammersley,
     SamplerTypeJitter,
     SamplerTypeMultiJitter,
     SamplerTypeNRooks,
@@ -95,11 +95,26 @@ SamplerPtr getSampler(SamplerType samplerMenuitem) {
     return sampler;
 }
 
+
+const wxString DEFAULT_SAMPLE_NUMS[] = {
+    wxT("1"),
+    wxT("4"),
+    wxT("9"),
+    wxT("16"),
+    wxT("25"),
+    wxT("36"),
+    wxT("49"),
+    wxT("64")
+};
+const int NUM_DEFAULT_SAMPLE_NUMS = sizeof(DEFAULT_SAMPLE_NUMS) / sizeof (DEFAULT_SAMPLE_NUMS[0]);
+
 struct RenderParams {
-    RenderParams() : builder_(0) {}
+    RenderParams() : builder_(0), numSamples_(1) {}
 
     SamplerPtr  sampler_;
     builderFunc builder_;
+
+    int numSamples_;
 };
 
 
@@ -126,18 +141,26 @@ void wxraytracerapp::SetStatusText(const wxString&  text, int number) {
     frame->SetStatusText(text, number);
 }
 
+//IDs for menu items
+enum COMMANDS {
+    Menu_File_Quit = 100,
+    Menu_File_Open,
+    Menu_File_Save,
+
+    COMMAND_RENDER
+};
+
+
 
 BEGIN_EVENT_TABLE( wxraytracerFrame, wxFrame )
-    EVT_MENU_RANGE( Menu_Render_First, Menu_Render_Last, wxraytracerFrame::OnRenderStart )
-
-    EVT_MENU( Menu_Render_Pause, wxraytracerFrame::OnRenderPause )
-    EVT_MENU( Menu_Render_Resume, wxraytracerFrame::OnRenderResume )
-
     EVT_MENU( Menu_File_Save, wxraytracerFrame::OnSaveFile )
     EVT_MENU( Menu_File_Open, wxraytracerFrame::OnOpenFile )
     EVT_MENU( Menu_File_Quit, wxraytracerFrame::OnQuit )
     EVT_COMMAND(ID_RENDER_COMPLETED, wxEVT_RENDER,
                 wxraytracerFrame::OnRenderCompleted)
+
+    EVT_BUTTON(COMMAND_RENDER, wxraytracerFrame::OnRenderStart)
+    EVT_UPDATE_UI(COMMAND_RENDER, wxraytracerFrame::OnUpdateRender)
 
 END_EVENT_TABLE()
 
@@ -152,33 +175,21 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
 
     menuFile->Enable(menuFile->FindItem(wxT("&Save As...")), FALSE);
 
-    wxMenu *menuRender = new wxMenu;
-
-    menuRender->Append(Menu_Render_Start3_1 , wxT("&Start3_1" ));
-    menuRender->Append(Menu_Render_Start3_2 , wxT("&Start3_2" ));
-    menuRender->Append(Menu_Render_Start4_4a , wxT("&Start4_4a" ));
-    menuRender->Append(Menu_Render_Math, wxT("&Start Math" ));
-    menuRender->Append(Menu_Render_Debug, wxT("&Start Debug" ));
-
-    menuRender->Append(Menu_Render_Pause , wxT("&Pause" ));
-    menuRender->Append(Menu_Render_Resume, wxT("&Resume"));
-
-    menuRender->Enable(menuRender->FindItem(wxT("&Start" )), TRUE );
-    menuRender->Enable(menuRender->FindItem(wxT("&Pause" )), FALSE);
-    menuRender->Enable(menuRender->FindItem(wxT("&Resume")), FALSE);
-
-
     wxMenuBar *menuBar = new wxMenuBar;
     menuBar->Append(menuFile  , wxT("&File"  ));
-    menuBar->Append(menuRender, wxT("&Render"));
 
     SetMenuBar( menuBar );
 
     toolbar_ = CreateToolBar();
 
+    renderBtn_ = new wxButton(toolbar_, COMMAND_RENDER, wxT("Render"));
+    toolbar_->AddControl(renderBtn_);
 
 
-    builderCombo_ = new wxComboBox(toolbar_, wxID_ANY);
+    builderCombo_ = new wxComboBox(
+        toolbar_, wxID_ANY, wxT(""),
+        wxDefaultPosition, wxDefaultSize, NULL,
+        wxCB_DROPDOWN | wxCB_READONLY);
     for (int i = 0; i < NUM_BUILDERS; i++) {
         const void* data = reinterpret_cast<const void*>(BUILDERS[i].func_);
         builderCombo_->Append(
@@ -189,7 +200,10 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     toolbar_->AddControl(builderCombo_);
 
 
-    samplerCombo_ = new wxComboBox(toolbar_, wxID_ANY);
+    samplerCombo_ = new wxComboBox(
+        toolbar_, wxID_ANY, wxT(""),
+        wxDefaultPosition, wxDefaultSize, NULL,
+        wxCB_DROPDOWN | wxCB_READONLY);
     for (int i = 0; i < NUM_SAMPLERS; i++) {
         const void* data = reinterpret_cast<const void*>(&SAMPLERS[i].sampler);
         samplerCombo_->Append(
@@ -199,6 +213,11 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
     samplerCombo_->SetSelection(0);
     toolbar_->AddControl(samplerCombo_);
 
+    sampleNumCombo_ = new wxComboBox(
+        toolbar_, wxID_ANY, wxT("1"),
+        wxDefaultPosition, wxDefaultSize,
+        NUM_DEFAULT_SAMPLE_NUMS, DEFAULT_SAMPLE_NUMS);
+    toolbar_->AddControl(sampleNumCombo_);
 
     canvas = new RenderCanvas(this);
 
@@ -273,10 +292,17 @@ void wxraytracerFrame::OnOpenFile( wxCommandEvent& WXUNUSED( event ) ) {
 }
 
 void wxraytracerFrame::OnRenderStart( wxCommandEvent& event ) {
-    wxMenu* menu = GetMenuBar()->GetMenu(1);
-    menu->Enable(menu->FindItem(wxT("&Start" )), FALSE);
-    menu->Enable(menu->FindItem(wxT("&Pause" )), TRUE );
-    menu->Enable(menu->FindItem(wxT("&Resume")), FALSE);
+    switch(canvas->getState()){
+        case RenderCanvas::RENDERING:
+            canvas->renderPause();
+            return;
+        case RenderCanvas::PAUSED:
+            canvas->renderResume();
+            return;
+        case RenderCanvas::WAITING:
+        default:
+            break;
+    }
 
     wxMenu* menuFile = GetMenuBar()->GetMenu(0);
     menuFile->Enable(menuFile->FindItem(wxT( "&Open..."   )), FALSE);
@@ -298,49 +324,48 @@ void wxraytracerFrame::OnRenderStart( wxCommandEvent& event ) {
         rp.builder_ = reinterpret_cast<builderFunc>(data);
     }
 
+    wxString numSamples = sampleNumCombo_->GetValue();
+    long val = 1;
+    numSamples.ToLong(&val, 10);
+    rp.numSamples_ = val;
+
     canvas->renderStart(rp);
 }
 
 void wxraytracerFrame::OnRenderCompleted( wxCommandEvent& event ) {
-    wxMenu* menu = GetMenuBar()->GetMenu(1);
-    menu->Enable(menu->FindItem(wxT("&Start" )), TRUE );
-    menu->Enable(menu->FindItem(wxT("&Pause" )), FALSE);
-    menu->Enable(menu->FindItem(wxT("&Resume")), FALSE);
-
     wxMenu* menuFile = GetMenuBar()->GetMenu(0);
     menuFile->Enable(menuFile->FindItem(wxT("&Open...")), TRUE);
-
     wxGetApp().SetStatusText(wxT("Rendering complete"));
 }
 
 void wxraytracerFrame::OnRenderPause( wxCommandEvent& event ) {
-    wxMenu* menu = GetMenuBar()->GetMenu(1);
-    menu->Enable(menu->FindItem(wxT("&Start" )), FALSE);
-    menu->Enable(menu->FindItem(wxT("&Pause" )), FALSE);
-    menu->Enable(menu->FindItem(wxT("&Resume")), TRUE );
-
     canvas->renderPause();
-
     wxGetApp().SetStatusText( wxT( "Rendering paused" ) );
 }
 
 void wxraytracerFrame::OnRenderResume( wxCommandEvent& event ) {
-    wxMenu* menu = GetMenuBar()->GetMenu(1);
-    menu->Enable(menu->FindItem(wxT("&Start" )), FALSE);
-    menu->Enable(menu->FindItem(wxT("&Pause" )), TRUE );
-    menu->Enable(menu->FindItem(wxT("&Resume")), FALSE);
-
     canvas->renderResume();
-
     wxGetApp().SetStatusText(wxT("Rendering..."));
 }
 
 
-RenderCanvas::RenderCanvas(wxWindow *parent)
-        : wxScrolledWindow(parent),
-        m_image(NULL),
-        timer(NULL),
-        updateTimer(this, ID_RENDER_UPDATE) {
+void wxraytracerFrame::OnUpdateRender( wxUpdateUIEvent& event ) {
+    switch(canvas->getState()){
+        case RenderCanvas::RENDERING:
+            event.SetText(wxT("Pause"));
+            break;
+        case RenderCanvas::PAUSED:
+            event.SetText(wxT("Continue"));
+            break;
+        case RenderCanvas::WAITING:
+            event.SetText(wxT("Render"));
+            break;
+    }
+}
+
+
+RenderCanvas::RenderCanvas(wxWindow *parent) : wxScrolledWindow(parent),
+        state_(WAITING), m_image(NULL), timer(NULL), updateTimer(this, ID_RENDER_UPDATE) {
     SetOwnBackgroundColour(wxColour(143,144,150));
 }
 
@@ -387,6 +412,7 @@ void RenderCanvas::OnRenderCompleted( wxCommandEvent& event ) {
         delete timer;
         timer = NULL;
     }
+    state_ = WAITING;
 }
 
 void RenderCanvas::OnNewPixel( wxCommandEvent& event ) {
@@ -422,6 +448,8 @@ void RenderCanvas::renderPause(void) {
 
     if (timer != NULL)
         timer->Pause();
+
+    state_ = PAUSED;
 }
 
 void RenderCanvas::renderResume(void) {
@@ -432,6 +460,8 @@ void RenderCanvas::renderResume(void) {
 
     if (timer != NULL)
         timer->Resume();
+
+    state_ = RENDERING;
 }
 
 void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
@@ -469,6 +499,7 @@ void RenderCanvas::OnTimerUpdate( wxTimerEvent& event ) {
 
 
 void RenderCanvas::renderStart(const RenderParams& rp) {
+    state_ = RENDERING;
     assert(rp.builder_);
 
     w.reset(new World());
@@ -481,8 +512,7 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
     vp.vres = height;
 
     if ( rp.sampler_ ) {
-        // SamplerPtr sampler = getSampler(rp.sampler_);
-        rp.sampler_->init(1, 83);
+        rp.sampler_->init(rp.numSamples_, 83);
         rp.sampler_->generate_samples();
         vp.set_sampler(rp.sampler_);
     }
@@ -491,16 +521,7 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
 
     wxGetApp().SetStatusText( wxT( "Building world..." ) );
     rp.builder_( w );
-//    if (Menu_Render_Start3_1 == id )
-//        build3_1(w);
-//    else if (Menu_Render_Start3_2 == id )
-//        build3_2(w);
-//    else if (Menu_Render_Start4_4a == id )
-//        build4_4a(w);
-//    else if (Menu_Render_Math == id )
-//        build_math(w);
-//    else if (Menu_Render_Debug == id )
-//        build_debug(w);
+
 
     // Builder may have reset the viewplane.
     vp = w->get_viewplane();

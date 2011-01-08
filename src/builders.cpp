@@ -94,16 +94,7 @@ void build4_4a(WorldPtr w) {
 
 
 void build_math(WorldPtr w) {
-    ViewPlane vp = w->get_viewplane();
-    vp.set_pixel_size(0.85);
-
-    SamplerPtr sampler = vp.get_sampler();
-    sampler->init(4, 83);
-    sampler->generate_samples();
-
-    w->set_viewplane(vp);
     w->set_tracer( TracerPtr(new TracerMath(w)) );
-
 }
 
 

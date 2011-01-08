@@ -72,34 +72,19 @@ public:
     void OnRenderCompleted( wxCommandEvent& event );
     void OnRenderPause( wxCommandEvent& event );
     void OnRenderResume( wxCommandEvent& event );
+    void OnUpdateRender( wxUpdateUIEvent& event );
 
 private:
     wxToolBar* toolbar_;
+    wxButton*   renderBtn_;
     wxComboBox* samplerCombo_;
     wxComboBox* builderCombo_;
+    wxComboBox* sampleNumCombo_;
     RenderCanvas *canvas; //where the rendering takes place
     wxString currentPath; //for file dialogues
     DECLARE_EVENT_TABLE()
 };
 
-//IDs for menu items
-enum MenuEnums {
-    Menu_File_Quit = 100,
-    Menu_File_Open,
-    Menu_File_Save,
-
-    Menu_Render_Start3_1,
-    Menu_Render_Start3_2,
-    Menu_Render_Start4_4a,
-    Menu_Render_Debug,
-    Menu_Render_Math,
-
-    Menu_Render_Pause,
-    Menu_Render_Resume,
-
-    Menu_Render_First = Menu_Render_Start3_1,
-    Menu_Render_Last = Menu_Render_Math
-};
 
 struct RenderParams;
 
@@ -120,11 +105,14 @@ public:
     void OnTimerUpdate( wxTimerEvent& event );
     void OnNewPixel( wxCommandEvent& event );
 
-protected:
+    enum RenderState { WAITING, RENDERING, PAUSED };
+    RenderState getState() const { return state_; }
+
+private:
+    RenderState state_;
     wxBitmap *m_image;
     WorldPtr w;
 
-private:
     RenderThreadPtr thread;
     wxStopWatch* timer;
     long pixelsRendered;
