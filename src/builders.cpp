@@ -8,7 +8,7 @@
 #include <IBuilder.h>
 #include <MultipleObjects.h>
 #include <RayCast.h>
-#include <Matte.h>
+
 #include <Plane.h>
 #include <Regular.h>
 #include <Pinhole.h>
@@ -58,42 +58,6 @@ void build3_2(WorldPtr w) {
 }
 
 
-void build4_4a(WorldPtr w) {
-    int num_samples = 1;  // use 1 for 4.4(a) and 16 for 4.4(b)
-
-    SamplerPtr uniform_ptr( new Regular(num_samples) );
-
-    ViewPlane vp;
-    vp.set_hres(32);
-    vp.set_vres(32);
-    vp.set_pixel_size(1.0);
-    vp.set_sampler(uniform_ptr);
-
-    w->set_background( BLACK );
-    w->set_tracer( TracerPtr(new RayCast(w)) );
-
-    Camera* camera = new Pinhole;
-    camera->set_eye(0, 0, 100);
-    camera->set_lookat(0.0);
-    w->set_camera(camera);
-
-    w->set_ambient( new Ambient );
-
-//    PointLight* light_ptr = new PointLight();
-//    light_ptr->set_location(100, 100, 200);
-//    light_ptr->scale_radiance(2.0);
-//    w->add_light(light_ptr);
-
-    Matte* matte_ptr = new Matte;
-    matte_ptr->set_ka(0.2);
-    matte_ptr->set_kd(0.8);
-    matte_ptr->set_cd( YELLOW );
-
-    Sphere* sphere_ptr = new Sphere(Point3D(0.0), 13.0);
-    sphere_ptr->set_material(MaterialPtr(matte_ptr));
-    w->add_object(sphere_ptr);
-}
-
 
 void build_math(WorldPtr w) {
     w->set_tracer( TracerPtr(new TracerMath(w)) );
@@ -103,7 +67,7 @@ void build_math(WorldPtr w) {
 void build_debug(WorldPtr w) {
     ViewPlane vp = w->get_viewplane();
     SamplerPtr sampler = vp.get_sampler();
-    vector<Point2D> samples = sampler->get_samples();
+    SampleBundle2D samples = sampler->get_next();
     for ( vector<Point2D>::iterator iter = samples.begin(); iter != samples.end(); ++iter )
         wxLogMessage(wxT("Sample: %1.4f  %1.4f"), iter->x, iter->y);
 //    int samples = sampler->get_num_samples();

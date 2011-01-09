@@ -9,14 +9,14 @@
 #include <IRenderer.h>
 #include <IBuilder.h>
 #include <MultipleObjects.h>
-#include <Matte.h>
+//#include <Matte.h>
 #include <Plane.h>
 
-#include <Hammersley.h>
-#include <Jittered.h>
-#include <MultiJittered.h>
-#include <NRooks.h>
-#include <PureRandom.h>
+//#include <Hammersley.h>
+//#include <Jittered.h>
+//#include <MultiJittered.h>
+//#include <NRooks.h>
+//#include <PureRandom.h>
 #include <Regular.h>
 
 #include <background.xpm>
@@ -35,7 +35,6 @@ struct BuilderSelector {
 const BuilderSelector BUILDERS[] = {
     { wxT("3-1"),   build3_1},
     { wxT("3-2"),   build3_2},
-    { wxT("4_4a"),  build4_4a},
     { wxT("math"),  build_math},
     { wxT("debug"), build_debug}
 };
@@ -67,34 +66,35 @@ const SamplerSelector SAMPLERS[] = {
 const int NUM_SAMPLERS = sizeof(SAMPLERS)/sizeof(SAMPLERS[0]);
 
 SamplerPtr getSampler(SamplerType samplerMenuitem) {
-    SamplerPtr sampler;
-    switch(samplerMenuitem) {
-        case SamplerTypeHammersley:
-            sampler.reset(new Hammersley);
-            break;
-
-        case SamplerTypeJitter:
-            sampler.reset(new Jittered);
-            break;
-
-        case SamplerTypeMultiJitter:
-            sampler.reset(new MultiJittered);
-            break;
-
-        case SamplerTypeNRooks:
-            sampler.reset(new NRooks);
-            break;
-
-        case SamplerTypeRandom:
-            sampler.reset(new PureRandom);
-            break;
-
-        case SamplerTypeRegular:
-        default:
-            sampler.reset(new Regular);
-            break;
-    }
-    return sampler;
+    return SamplerPtr(new Regular2D);
+//    SamplerPtr sampler;
+//    switch(samplerMenuitem) {
+//        case SamplerTypeHammersley:
+//            sampler.reset(new Hammersley);
+//            break;
+//
+//        case SamplerTypeJitter:
+//            sampler.reset(new Jittered);
+//            break;
+//
+//        case SamplerTypeMultiJitter:
+//            sampler.reset(new MultiJittered);
+//            break;
+//
+//        case SamplerTypeNRooks:
+//            sampler.reset(new NRooks);
+//            break;
+//
+//        case SamplerTypeRandom:
+//            sampler.reset(new PureRandom);
+//            break;
+//
+//        case SamplerTypeRegular:
+//        default:
+//            sampler.reset(new Regular);
+//            break;
+//    }
+//    return sampler;
 }
 
 
@@ -522,8 +522,7 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
     vp.vres = height;
 
     if ( rp.sampler_ ) {
-        rp.sampler_->init(rp.numSamples_, 1/*83*/);
-        rp.sampler_->generate_samples();
+        rp.sampler_->set_bundle_size(rp.numSamples_);
         vp.set_sampler(rp.sampler_);
     }
 

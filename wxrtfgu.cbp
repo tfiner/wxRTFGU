@@ -38,8 +38,17 @@
 			<Add option="-Wall" />
 			<Add option="`wx-config --cflags`" />
 			<Add directory="include" />
-			<Add directory="../rtfgu-source/include" />
+			<Add directory="../rtfgu-source/src" />
 			<Add directory="resource" />
+			<Add directory="/home/tim/projects/wxrtfgu/" />
+			<Add directory="../rtfgu-source/src/geo_obj" />
+			<Add directory="../rtfgu-source/src/samplers" />
+			<Add directory="../rtfgu-source/src/math" />
+			<Add directory="../rtfgu-source/src/shaders" />
+			<Add directory="../rtfgu-source/src/cameras" />
+			<Add directory="../rtfgu-source/src/lights" />
+			<Add directory="../rtfgu-source/src/tracers" />
+			<Add directory="../rtfgu-source/src/materials" />
 		</Compiler>
 		<Linker>
 			<Add option="`wx-config --libs`" />
