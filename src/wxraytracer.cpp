@@ -1,5 +1,7 @@
 #include <wx/wx.h>
 #include <wx/dcbuffer.h>
+#include <wx/spinctrl.h>
+
 #include "wxraytracer.h"
 
 #include <World.h>
@@ -25,11 +27,11 @@
 
 
 typedef void (*builderFunc)(WorldPtr);
-
 struct BuilderSelector {
     wxString    name_;
     builderFunc func_;
 };
+
 const BuilderSelector BUILDERS[] = {
     { wxT("3-1"),   build3_1},
     { wxT("3-2"),   build3_2},
@@ -109,12 +111,13 @@ const wxString DEFAULT_SAMPLE_NUMS[] = {
 const int NUM_DEFAULT_SAMPLE_NUMS = sizeof(DEFAULT_SAMPLE_NUMS) / sizeof (DEFAULT_SAMPLE_NUMS[0]);
 
 struct RenderParams {
-    RenderParams() : builder_(0), numSamples_(1) {}
+    RenderParams() : builder_(0), numSamples_(1), pixelSize_(1.0f) {}
 
     SamplerPtr  sampler_;
     builderFunc builder_;
 
     int numSamples_;
+    float pixelSize_;
 };
 
 
@@ -218,6 +221,11 @@ wxraytracerFrame::wxraytracerFrame(const wxPoint& pos, const wxSize& size)
         wxDefaultPosition, wxDefaultSize,
         NUM_DEFAULT_SAMPLE_NUMS, DEFAULT_SAMPLE_NUMS);
     toolbar_->AddControl(sampleNumCombo_);
+
+    pixSizeSpin_ = new wxSpinCtrl(toolbar_, wxID_ANY);
+    pixSizeSpin_->SetRange(1,100); // In hundreths
+    pixSizeSpin_->SetValue(100);
+    toolbar_->AddControl(pixSizeSpin_);
 
     canvas = new RenderCanvas(this);
 
@@ -328,6 +336,8 @@ void wxraytracerFrame::OnRenderStart( wxCommandEvent& event ) {
     long val = 1;
     numSamples.ToLong(&val, 10);
     rp.numSamples_ = val;
+
+    rp.pixelSize_ = pixSizeSpin_->GetValue() / 100.0f;
 
     canvas->renderStart(rp);
 }
@@ -512,20 +522,19 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
     vp.vres = height;
 
     if ( rp.sampler_ ) {
-        rp.sampler_->init(rp.numSamples_, 83);
+        rp.sampler_->init(rp.numSamples_, 1/*83*/);
         rp.sampler_->generate_samples();
         vp.set_sampler(rp.sampler_);
     }
-    w->set_viewplane(vp);
 
+    vp.set_pixel_size( rp.pixelSize_ );
+    w->set_viewplane(vp);
 
     wxGetApp().SetStatusText( wxT( "Building world..." ) );
     rp.builder_( w );
 
-
     // Builder may have reset the viewplane.
     vp = w->get_viewplane();
-
 
     wxGetApp().SetStatusText( wxT( "Rendering..." ) );
 
@@ -539,9 +548,7 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
     dc.SetBackground(*wxGREY_BRUSH);
     dc.Clear();
 
-
     wxBitmap tile(background_xpm);
-
     for (int x = 0; x < vp.hres; x += 16) {
         for (int y = 0; y < vp.vres; y += 16)
             dc.DrawBitmap(tile, x, y, FALSE);
@@ -568,6 +575,12 @@ void RenderCanvas::renderStart(const RenderParams& rp) {
 }
 
 
+
+void RenderCanvas::OnKeyDown( wxKeyEvent& key ){
+    // const int code = key.GetKeyCode();
+}
+
+
 DEFINE_EVENT_TYPE(wxEVT_RENDER)
 
 BEGIN_EVENT_TABLE( RenderCanvas, wxScrolledWindow )
@@ -576,6 +589,8 @@ BEGIN_EVENT_TABLE( RenderCanvas, wxScrolledWindow )
     EVT_COMMAND(ID_RENDER_COMPLETED, wxEVT_RENDER,
                 RenderCanvas::OnRenderCompleted)
     EVT_TIMER(ID_RENDER_UPDATE, RenderCanvas::OnTimerUpdate)
+
+    EVT_KEY_DOWN(RenderCanvas::OnKeyDown)
 END_EVENT_TABLE()
 
 

@@ -80,6 +80,7 @@ private:
     wxComboBox* samplerCombo_;
     wxComboBox* builderCombo_;
     wxComboBox* sampleNumCombo_;
+    wxSpinCtrl* pixSizeSpin_;
     RenderCanvas *canvas; //where the rendering takes place
     wxString currentPath; //for file dialogues
     DECLARE_EVENT_TABLE()
@@ -98,15 +99,21 @@ public:
 
     virtual void OnDraw(wxDC& dc);
 
+    void renderIncreasePixelSize();
+    void renderDecreasePixelSize();
+
     void renderStart(const RenderParams& rp);
     void renderPause();
     void renderResume();
     void OnRenderCompleted( wxCommandEvent& event );
     void OnTimerUpdate( wxTimerEvent& event );
     void OnNewPixel( wxCommandEvent& event );
+    void OnKeyDown( wxKeyEvent& key );
 
     enum RenderState { WAITING, RENDERING, PAUSED };
     RenderState getState() const { return state_; }
+
+
 
 private:
     RenderState state_;

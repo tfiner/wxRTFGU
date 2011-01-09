@@ -1,3 +1,5 @@
+#include <wx/wx.h>
+
 #include "builders.h"
 
 #include <World.h>
@@ -14,6 +16,7 @@
 #include "tracer_math.h"
 #include "tracer_debug.h"
 
+
 namespace {
 
     const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
@@ -29,16 +32,16 @@ void build3_1(WorldPtr w) {
     Sphere s(Point3D(0,0,0), 100.0);
     w->set_sphere(s);
     w->set_tracer( TracerPtr(new SingleSphere(w)) );
+
+//    ViewPlane vp = w->get_viewplane();
+//    SamplerPtr sampler = vp.get_sampler();
+//    sampler->init(16, 16);
+//    sampler->generate_samples();
+//    w->set_viewplane(vp);
 }
 
 
 void build3_2(WorldPtr w) {
-    w->set_background( BLACK );
-    ViewPlane vp = w->get_viewplane();
-    SamplerPtr sampler = vp.get_sampler();
-    sampler->init(16, 83);
-    w->set_viewplane(vp);
-
     w->set_tracer( TracerPtr(new MultipleObjects(w)) );
 
 	Sphere*	sphere1 = new Sphere(Point3D(0,-25,0), 80.0);
@@ -52,7 +55,6 @@ void build3_2(WorldPtr w) {
     Plane* plane = new Plane(Point3D(0,0,0), Normal(0,1,1));
     plane->set_color( RGBColor(0.0,0.3,0.0) );
     w->add_object(plane);
-
 }
 
 
@@ -99,16 +101,18 @@ void build_math(WorldPtr w) {
 
 
 void build_debug(WorldPtr w) {
-    ViewPlane vp;
-    vp.set_hres(320);
-    vp.set_vres(320);
-    vp.set_pixel_size(1);
+    ViewPlane vp = w->get_viewplane();
     SamplerPtr sampler = vp.get_sampler();
-    sampler->init(16, 83);
-    sampler->generate_samples();
-    vp.set_sampler(sampler);
+    vector<Point2D> samples = sampler->get_samples();
+    for ( vector<Point2D>::iterator iter = samples.begin(); iter != samples.end(); ++iter )
+        wxLogMessage(wxT("Sample: %1.4f  %1.4f"), iter->x, iter->y);
+//    int samples = sampler->get_num_samples();
+//    vp.set_hres(sqrt(samples));
+//    vp.set_vres(sqrt(samples));
+    vp.set_hres(1);
+    vp.set_vres(1);
+    vp.set_pixel_size(1);
     w->set_viewplane(vp);
-
 
     w->set_background( WHITE );
     w->set_tracer( TracerPtr(new TracerDebug(w, BLACK)) );
