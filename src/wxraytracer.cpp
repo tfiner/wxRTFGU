@@ -17,7 +17,7 @@
 //#include <MultiJittered.h>
 //#include <NRooks.h>
 //#include <PureRandom.h>
-#include <Regular.h>
+#include <Regular2D.h>
 
 #include <background.xpm>
 #include <main.xpm>

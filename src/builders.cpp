@@ -10,7 +10,7 @@
 #include <RayCast.h>
 
 #include <Plane.h>
-#include <Regular.h>
+#include <Regular2D.h>
 #include <Pinhole.h>
 
 #include "tracer_math.h"
