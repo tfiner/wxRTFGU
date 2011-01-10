@@ -1,0 +1,20 @@
+This is a fork of the source code for the book: "Ray Tracing From the Ground Up" by Kevin Suffern.
+
+The source code was taken from http://www.raytracegroundup.com/ and is GPL.  See License.txt for details.
+
+I split the code into a static raytracer library and the UI application.  This is the UI application.
+
+BUILDING PREQUISITES
+    CodeBlocks, a free C/C++ IDE.
+    Boost, high quality C++ libraries.
+    The RTFGU static library, also hosted at github.
+
+Changes
+New UI Features:
+* ViewPlane takes it's width and height from the window.
+* Builder functions selectable from toolbar.
+* Sampler selected from toolbar.
+* Number of samples and pixel size selectable from toolbar.
+
+TODO
+    CMake build.
