@@ -12,11 +12,11 @@
 //#include <Matte.h>
 #include <Plane.h>
 
-//#include <Hammersley.h>
-//#include <Jittered.h>
+#include <Hammersley2D.h>
+#include <Jittered2D.h>
 //#include <MultiJittered.h>
 //#include <NRooks.h>
-//#include <PureRandom.h>
+#include <PureRandom2D.h>
 #include <Regular2D.h>
 
 #include <background.xpm>
@@ -66,17 +66,16 @@ const SamplerSelector SAMPLERS[] = {
 const int NUM_SAMPLERS = sizeof(SAMPLERS)/sizeof(SAMPLERS[0]);
 
 SamplerPtr getSampler(SamplerType samplerMenuitem) {
-    return SamplerPtr(new Regular2D);
-//    SamplerPtr sampler;
-//    switch(samplerMenuitem) {
-//        case SamplerTypeHammersley:
-//            sampler.reset(new Hammersley);
-//            break;
-//
-//        case SamplerTypeJitter:
-//            sampler.reset(new Jittered);
-//            break;
-//
+    SamplerPtr sampler;
+    switch(samplerMenuitem) {
+        case SamplerTypeHammersley:
+            sampler.reset(new Hammersley2D);
+            break;
+
+        case SamplerTypeJitter:
+            sampler.reset(new Jittered2D);
+            break;
+
 //        case SamplerTypeMultiJitter:
 //            sampler.reset(new MultiJittered);
 //            break;
@@ -85,16 +84,16 @@ SamplerPtr getSampler(SamplerType samplerMenuitem) {
 //            sampler.reset(new NRooks);
 //            break;
 //
-//        case SamplerTypeRandom:
-//            sampler.reset(new PureRandom);
-//            break;
-//
-//        case SamplerTypeRegular:
-//        default:
-//            sampler.reset(new Regular);
-//            break;
-//    }
-//    return sampler;
+        case SamplerTypeRandom:
+            sampler.reset(new PureRandom);
+            break;
+
+        case SamplerTypeRegular:
+        default:
+            sampler.reset(new Regular2D);
+            break;
+    }
+    return sampler;
 }
 
 

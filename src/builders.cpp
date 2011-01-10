@@ -3,6 +3,7 @@
 #include "builders.h"
 
 #include <World.h>
+#include <Constants.h>
 
 #include <IRenderer.h>
 #include <IBuilder.h>
@@ -19,11 +20,6 @@
 
 namespace {
 
-    const RGBColor BLACK    = RGBColor(0.0,0.0,0.0);
-    const RGBColor WHITE    = RGBColor(1.0,1.0,1.0);
-    const RGBColor RED      = RGBColor(1.0,0.0,0.0);
-    const RGBColor GREEN    = RGBColor(0.0,1.0,0.0);
-    const RGBColor YELLOW   = RGBColor(1.0,1.0,0.0);
 
 }
 
