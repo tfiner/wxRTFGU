@@ -14,8 +14,8 @@
 
 #include <Hammersley2D.h>
 #include <Jittered2D.h>
-//#include <MultiJittered.h>
-//#include <NRooks.h>
+#include <MultiJittered2D.h>
+#include <NRooks2D.h>
 #include <PureRandom2D.h>
 #include <Regular2D.h>
 
@@ -76,14 +76,14 @@ SamplerPtr getSampler(SamplerType samplerMenuitem) {
             sampler.reset(new Jittered2D);
             break;
 
-//        case SamplerTypeMultiJitter:
-//            sampler.reset(new MultiJittered);
-//            break;
-//
-//        case SamplerTypeNRooks:
-//            sampler.reset(new NRooks);
-//            break;
-//
+        case SamplerTypeMultiJitter:
+            sampler.reset(new MultiJittered2D);
+            break;
+
+        case SamplerTypeNRooks:
+            sampler.reset(new NRooks2D);
+            break;
+
         case SamplerTypeRandom:
             sampler.reset(new PureRandom);
             break;
@@ -592,19 +592,18 @@ BEGIN_EVENT_TABLE( RenderCanvas, wxScrolledWindow )
 END_EVENT_TABLE()
 
 
-
 RenderPixel::RenderPixel(int _x, int _y, int _red, int _green, int _blue)
         : x(_x), y(_y), red(_red), green(_green), blue(_blue) {}
 
 
 void RenderThread::render(int x, int y, int red, int green, int blue) {
     pixels.push_back(RenderPixel(x, y, red, green, blue));
-
     if (timer->Time() - lastUpdateTime > 250)
         NotifyCanvas();
 
     TestDestroy();
 }
+
 
 void RenderThread::NotifyCanvas() {
     lastUpdateTime = timer->Time();
@@ -619,21 +618,18 @@ void RenderThread::NotifyCanvas() {
     canvas->GetEventHandler()->AddPendingEvent(event);
 }
 
+
 void RenderThread::OnExit() {
     NotifyCanvas();
-
     wxCommandEvent event(wxEVT_RENDER, ID_RENDER_COMPLETED);
-
     canvas->GetEventHandler()->AddPendingEvent(event);
-
     canvas->GetParent()->GetEventHandler()->AddPendingEvent(event);
 }
+
 
 void *RenderThread::Entry() {
     lastUpdateTime = 0;
     timer = new wxStopWatch();
-
     world->render_scene(); //for bare bones ray tracer only
-
     return NULL;
 }

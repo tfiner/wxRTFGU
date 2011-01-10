@@ -18,12 +18,6 @@
 #include "tracer_debug.h"
 
 
-namespace {
-
-
-}
-
-
 void build3_1(WorldPtr w) {
     Sphere s(Point3D(0,0,0), 100.0);
     w->set_sphere(s);
