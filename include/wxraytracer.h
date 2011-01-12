@@ -33,7 +33,9 @@ public:
     RenderThread(RenderCanvas* c, WorldPtr w) : wxThread(wxTHREAD_JOINABLE), world(w), canvas(c) {}
     virtual void *Entry();
     virtual void OnExit();
-    virtual void render(int x, int y, int red, int green, int blue);
+
+    // IRender overload
+    bool render(int x, int y, int red, int green, int blue);
 
 private:
     void NotifyCanvas();
@@ -72,18 +74,25 @@ public:
     void OnRenderCompleted( wxCommandEvent& event );
     void OnRenderPause( wxCommandEvent& event );
     void OnRenderResume( wxCommandEvent& event );
+    void OnRenderStop( wxCommandEvent& event );
     void OnUpdateRender( wxUpdateUIEvent& event );
 
 private:
     wxToolBar* toolbar_;
+    wxButton*   stopBtn_;
     wxButton*   renderBtn_;
     wxComboBox* samplerCombo_;
+    wxCheckBox* transformCheck_;
     wxComboBox* builderCombo_;
     wxComboBox* sampleNumCombo_;
     wxSpinCtrl* pixSizeSpin_;
+    wxMenu*     menuDebug_;
+
     RenderCanvas *canvas; //where the rendering takes place
     wxString currentPath; //for file dialogues
     DECLARE_EVENT_TABLE()
+
+    void create_toolbar();
 };
 
 
@@ -99,21 +108,17 @@ public:
 
     virtual void OnDraw(wxDC& dc);
 
-    void renderIncreasePixelSize();
-    void renderDecreasePixelSize();
-
     void renderStart(const RenderParams& rp);
     void renderPause();
     void renderResume();
+    void renderStop();
     void OnRenderCompleted( wxCommandEvent& event );
     void OnTimerUpdate( wxTimerEvent& event );
     void OnNewPixel( wxCommandEvent& event );
     void OnKeyDown( wxKeyEvent& key );
 
-    enum RenderState { WAITING, RENDERING, PAUSED };
+    enum RenderState { WAITING, RENDERING, PAUSED, STOPPED };
     RenderState getState() const { return state_; }
-
-
 
 private:
     RenderState state_;
@@ -125,6 +130,9 @@ private:
     long pixelsRendered;
     long pixelsToRender;
     wxTimer updateTimer;
+
+    void debugSampler(const RenderParams& rp);
+    void drawGrid(wxDC& dc, int width, int height, int size);
 
     DECLARE_EVENT_TABLE()
 };
