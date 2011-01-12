@@ -636,33 +636,27 @@ public:
 };
 
 
-void RenderCanvas::debugSampler(const RenderParams& r) {
-    RenderParams rp(r);
+void RenderCanvas::debugSampler(const RenderParams& rp) {
+    assert ( rp.sampler_ );
+
     state_ = RENDERING;
-    assert(rp.builder_);
 
-    w.reset(new World());
-
-    ViewPlane vp = w->get_viewplane();
     int width = 0, height = 0;
     GetSize(&width, &height);
 
-    //
+    rp.sampler_->set_bundle_size(rp.numSamples_*16);
+
+    ViewPlane vp;
+
     const int GRID_PIX_SIZE = 16;
-//    rp.numSamples_ = 1;
-
-    vp.hres = width / GRID_PIX_SIZE;
-    vp.vres = height / GRID_PIX_SIZE;
-
-    if ( rp.sampler_ ) {
-        rp.sampler_->set_bundle_size(rp.numSamples_);
-        vp.set_sampler(rp.sampler_);
-    }
+    vp.hres = 1;
+    vp.vres = 1;
+//    vp.hres = width / GRID_PIX_SIZE;
+//    vp.vres = height / GRID_PIX_SIZE;
 
     vp.set_pixel_size( 1.0f );
     vp.set_transform( rp.transform_ );
-    w->set_viewplane(vp);
-
+    vp.set_sampler( rp.sampler_ );
 
     wxBitmap bitmap(width, height, -1);
     wxMemoryDC dc;
@@ -676,7 +670,6 @@ void RenderCanvas::debugSampler(const RenderParams& r) {
     dc.SetBrush(*wxRED_BRUSH);
 
     const int GRID_PIX_SQUARE = GRID_PIX_SIZE * GRID_PIX_SIZE;
-    const int GRID_PIX_HALF = GRID_PIX_SIZE / 2;
     const int GRID_PIX_QUARTER = GRID_PIX_SIZE / 4;
     for (int y = 0, counter=0; y < height; y+=GRID_PIX_SQUARE, counter++) {
         for (int x = 0; x < width; x+=GRID_PIX_SQUARE, counter++) {
@@ -698,15 +691,13 @@ void RenderCanvas::debugSampler(const RenderParams& r) {
             const SampleBundle2D& samples = vp.get_next();
             for ( SampleBundle2D::const_iterator sp = samples.begin();
                     sp != samples.end(); ++sp ) {
-                int nx = (x - GRID_PIX_SQUARE/2) + (sp->x * GRID_PIX_SQUARE - GRID_PIX_SQUARE/2);
-                int ny = (y - GRID_PIX_SQUARE/2) + (sp->y * GRID_PIX_SQUARE - GRID_PIX_SQUARE/2);
+                int nx = (x - GRID_PIX_SQUARE/2) + GRID_PIX_SQUARE * (sp->x - 0.5f);
+                int ny = (y - GRID_PIX_SQUARE/2) + GRID_PIX_SQUARE * (sp->y - 0.5f);
                 dc.DrawCircle(nx+GRID_PIX_QUARTER, ny+GRID_PIX_QUARTER, GRID_PIX_QUARTER);
             }
 
         }
     }
-
-
 
     dc.SelectObject(wxNullBitmap);
 
