@@ -36,7 +36,8 @@ const BuilderSelector BUILDERS[] = {
     { wxT("3-1"),   build3_1},
     { wxT("3-2"),   build3_2},
     { wxT("math"),  build_math},
-    { wxT("debug"), build_debug}
+    { wxT("debug"), build_debug},
+    { wxT("tim 0"), build_tim00}
 };
 const int NUM_BUILDERS = sizeof(BUILDERS)/sizeof(BUILDERS[0]);
 
@@ -357,7 +358,8 @@ void wxraytracerFrame::OnUpdateRender( wxUpdateUIEvent& event ) {
 void wxraytracerFrame::create_toolbar() {
     toolbar_ = CreateToolBar();
 
-    renderBtn_ = new wxButton(toolbar_, COMMAND_RENDER, wxT("Render"));
+    renderBtn_ = new wxButton(toolbar_, COMMAND_RENDER, wxT("Render"),
+        wxDefaultPosition, wxSize(90,30));
     toolbar_->AddControl(renderBtn_);
 
     stopBtn_ = new wxButton(toolbar_, COMMAND_STOP, wxT("X"),
@@ -366,7 +368,7 @@ void wxraytracerFrame::create_toolbar() {
 
     builderCombo_ = new wxComboBox(
         toolbar_, wxID_ANY, wxT(""),
-        wxDefaultPosition, wxDefaultSize, NULL,
+        wxDefaultPosition, wxSize(60,30), NULL,
         wxCB_DROPDOWN | wxCB_READONLY);
     for (int i = 0; i < NUM_BUILDERS; i++) {
         const void* data = reinterpret_cast<const void*>(BUILDERS[i].func_);
@@ -380,7 +382,7 @@ void wxraytracerFrame::create_toolbar() {
 
     samplerCombo_ = new wxComboBox(
         toolbar_, wxID_ANY, wxT(""),
-        wxDefaultPosition, wxDefaultSize, NULL,
+        wxDefaultPosition, wxSize(120,30), NULL,
         wxCB_DROPDOWN | wxCB_READONLY);
     for (int i = 0; i < NUM_SAMPLERS; i++) {
         const void* data = reinterpret_cast<const void*>(&SAMPLERS[i].sampler);
@@ -396,7 +398,7 @@ void wxraytracerFrame::create_toolbar() {
 
     sampleNumCombo_ = new wxComboBox(
         toolbar_, wxID_ANY, wxT("1"),
-        wxDefaultPosition, wxDefaultSize,
+        wxDefaultPosition, wxSize(60,30),
         NUM_DEFAULT_SAMPLE_NUMS, DEFAULT_SAMPLE_NUMS);
     toolbar_->AddControl(sampleNumCombo_);
 
@@ -687,15 +689,14 @@ void RenderCanvas::debugSampler(const RenderParams& rp) {
 //            int ny = y + GRID_PIX_SQUARE / 2;
 //            dc.DrawRectangle(nx, ny, GRID_PIX_SIZE, GRID_PIX_SIZE);
 
-
             const SampleBundle2D& samples = vp.get_next();
             for ( SampleBundle2D::const_iterator sp = samples.begin();
                     sp != samples.end(); ++sp ) {
+//                wxLogMessage(wxT("Ray: %1.4f  %1.4f"), sp->x, sp->y);
                 int nx = (x - GRID_PIX_SQUARE/2) + GRID_PIX_SQUARE * (sp->x - 0.5f);
                 int ny = (y - GRID_PIX_SQUARE/2) + GRID_PIX_SQUARE * (sp->y - 0.5f);
                 dc.DrawCircle(nx+GRID_PIX_QUARTER, ny+GRID_PIX_QUARTER, GRID_PIX_QUARTER);
             }
-
         }
     }
 

@@ -11,6 +11,7 @@ void build3_2(WorldPtr w);
 
 void build_math(WorldPtr w);
 void build_debug(WorldPtr w);
+void build_tim00(WorldPtr w);
 
 
 #endif // BUILDERS_H_INCLUDED

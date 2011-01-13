@@ -71,3 +71,20 @@ void build_debug(WorldPtr w) {
     w->set_background( WHITE );
     w->set_tracer( TracerPtr(new TracerDebug(w, BLACK)) );
 }
+
+
+void build_tim00(WorldPtr w) {
+    w->set_tracer( TracerPtr(new MultipleObjects(w)) );
+
+	Sphere*	sphere1 = new Sphere(Point3D(-150,0,-300), 150.0);
+	sphere1->set_color( RED );
+    w->add_object( sphere1 );
+
+	Sphere*	sphere2 = new Sphere(Point3D(0,-100,0), 150.0);
+	sphere2->set_color( GREEN );
+    w->add_object( sphere2 );
+
+    Sphere* sphere3 = new Sphere(Point3D(150,0,0), 150);
+    sphere3->set_color( BLUE );
+    w->add_object(sphere3);
+}
